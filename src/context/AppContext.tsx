@@ -81,6 +81,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const employee = useMemo(() => employees.find(e => e.id === user?.employeeId) || null, [employees, user]);
 
+  const refreshData = async () => {
+    try {
+      const [empData, attData, leaveData, notifData] = await Promise.all([
+        api.getEmployees(),
+        api.getAttendance(),
+        api.getLeaves(),
+        api.getNotifications()
+      ]);
+      setEmployees(empData);
+      setAttendance(attData);
+      setLeaves(leaveData);
+      setNotifications(notifData);
+    } catch (err) {
+      console.warn('[Sync Error]', err);
+    }
+  };
+
   const signIn = async (id: string, role: Role) => {
     try {
       const result = await api.login(id, role);
@@ -96,8 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           return [result.employee, ...prev];
         });
       }
-      const notifData = await api.getNotifications();
-      setNotifications(notifData);
+      await refreshData();
     } catch (err) {
       const found = employees.find(e => e.id.toLowerCase() === id.toLowerCase() || e.email.toLowerCase() === id.toLowerCase());
       setUser({ employeeId: found?.id || (role === 'admin' ? 'DF-1001' : 'DF-1042'), role });
@@ -109,8 +125,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const result = await api.register(name, email, role);
       setUser(result.user);
       setEmployees(prev => [result.employee, ...prev]);
-      const notifData = await api.getNotifications();
-      setNotifications(notifData);
+      await refreshData();
     } catch (err) {
       const id = `DF-${Math.floor(1200 + Math.random() * 700)}`;
       const initials = name.split(' ').map(x => x[0]).join('').slice(0, 2).toUpperCase();

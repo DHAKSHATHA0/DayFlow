@@ -19,7 +19,12 @@ const registerSchema = z.object({
 });
 
 export async function login(req: AuthRequest, res: Response) {
-  const { idOrEmail, password, role: requestedRole } = loginSchema.parse(req.body);
+  const loginResult = loginSchema.safeParse(req.body);
+  if (!loginResult.success) {
+    res.status(400).json({ error: loginResult.error.errors[0]?.message || 'Invalid input data' });
+    return;
+  }
+  const { idOrEmail, password, role: requestedRole } = loginResult.data;
 
   const term = idOrEmail.trim().toLowerCase();
   const user = db.prepare(`
@@ -72,7 +77,12 @@ export async function login(req: AuthRequest, res: Response) {
 }
 
 export async function register(req: AuthRequest, res: Response) {
-  const { name, email, password, role } = registerSchema.parse(req.body);
+  const regResult = registerSchema.safeParse(req.body);
+  if (!regResult.success) {
+    res.status(400).json({ error: regResult.error.errors[0]?.message || 'Invalid input data' });
+    return;
+  }
+  const { name, email, password, role } = regResult.data;
 
   const existing = db.prepare(`SELECT id FROM users WHERE LOWER(email) = ?`).get(email.toLowerCase());
   if (existing) {
