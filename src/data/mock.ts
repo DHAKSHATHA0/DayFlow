@@ -3,7 +3,7 @@ export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 export type LeaveType = 'Paid leave' | 'Sick leave' | 'Unpaid leave';
 export type Employee = { id:string; name:string; initials:string; email:string; role:Role; title:string; department:string; location:string; joined:string; phone:string; address:string; salary:number; color:string; };
 export type Attendance = { id:string; employeeId:string; date:string; checkIn:string; checkOut:string; status:'present'|'late'|'remote'|'absent'; };
-export type Leave = { id:string; employeeId:string; type:LeaveType; start:string; end:string; days:number; reason:string; status:LeaveStatus; comment?:string; };
+export type Leave = { id:string; employeeId:string; employeeName?:string; type:LeaveType; start:string; end:string; days:number; reason:string; status:LeaveStatus; comment?:string; };
 
 export const employees: Employee[] = [
   {id:'DF-1042',name:'Maya Chen',initials:'MC',email:'maya.chen@dayflow.co',role:'employee',title:'Product Designer',department:'Design',location:'San Francisco',joined:'Mar 12, 2022',phone:'+1 415 555 0142',address:'228 Valencia Street, San Francisco, CA',salary:94000,color:'#e58f78'},

@@ -19,9 +19,27 @@ const updateLeaveStatusSchema = z.object({
 
 export async function getAllLeaves(req: AuthRequest, res: Response) {
   try {
-    const leaves = db.prepare(`SELECT * FROM leaves ORDER BY created_at DESC`).all().map((row: any) => ({
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    let query = `
+      SELECT l.*, e.name as employee_name
+      FROM leaves l
+      LEFT JOIN employees e ON l.employee_id = e.id
+    `;
+    const params: string[] = [];
+
+    if (role !== 'admin') {
+      query += ` WHERE l.employee_id = ?`;
+      params.push(userId || '');
+    }
+
+    query += ` ORDER BY l.created_at DESC`;
+
+    const leaves = db.prepare(query).all(...params).map((row: any) => ({
       id: row.id,
       employeeId: row.employee_id,
+      employeeName: row.employee_name || 'Unknown',
       type: row.type,
       start: row.start,
       end: row.end,
@@ -64,9 +82,16 @@ export async function applyLeave(req: AuthRequest, res: Response) {
   createNotification('ADMIN', 'New Time Away Request', `${empName} requested ${days} day(s) of ${type} (${start} to ${end}).`, 'leave');
   createNotification(employeeId, 'Time Away Submitted', `Your request for ${days} day(s) of ${type} was submitted for manager review.`, 'leave');
 
-  const leaves = db.prepare(`SELECT * FROM leaves ORDER BY created_at DESC`).all().map((row: any) => ({
+  const leaves = db.prepare(`
+    SELECT l.*, e.name as employee_name
+    FROM leaves l
+    LEFT JOIN employees e ON l.employee_id = e.id
+    WHERE l.employee_id = ?
+    ORDER BY l.created_at DESC
+  `).all(employeeId).map((row: any) => ({
     id: row.id,
     employeeId: row.employee_id,
+    employeeName: row.employee_name || 'Unknown',
     type: row.type,
     start: row.start,
     end: row.end,
@@ -106,9 +131,15 @@ export async function updateLeaveStatus(req: AuthRequest, res: Response) {
   const message = `Your ${existing.type} request (${existing.start} - ${existing.end}) was ${status} by People Ops.${comment ? ' Note: "' + comment + '"' : ''}`;
   createNotification(existing.employee_id, `Time Away Request ${status.toUpperCase()}`, message, notifType);
 
-  const leaves = db.prepare(`SELECT * FROM leaves ORDER BY created_at DESC`).all().map((row: any) => ({
+  const leaves = db.prepare(`
+    SELECT l.*, e.name as employee_name
+    FROM leaves l
+    LEFT JOIN employees e ON l.employee_id = e.id
+    ORDER BY l.created_at DESC
+  `).all().map((row: any) => ({
     id: row.id,
     employeeId: row.employee_id,
+    employeeName: row.employee_name || 'Unknown',
     type: row.type,
     start: row.start,
     end: row.end,

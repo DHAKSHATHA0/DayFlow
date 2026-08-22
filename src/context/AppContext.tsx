@@ -55,27 +55,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Initial backend fetch & real-time synchronization interval
   useEffect(() => {
     async function loadData() {
+      if (!localStorage.getItem('df-token')) return;
       try {
-        if (localStorage.getItem('df-token')) {
-          const me = await api.getMe();
-          setUser(me.user);
-          const notifData = await api.getNotifications();
-          setNotifications(notifData);
-        }
-        const [empData, attData, leaveData] = await Promise.all([
+        const me = await api.getMe();
+        setUser(me.user);
+
+        const [empData, attData, leaveData, notifData] = await Promise.all([
           api.getEmployees(),
           api.getAttendance(),
-          api.getLeaves()
+          api.getLeaves(),
+          api.getNotifications()
         ]);
         setEmployees(empData);
         setAttendance(attData);
         setLeaves(leaveData);
+        setNotifications(notifData);
       } catch (err) {
         console.warn('[Backend Sync] Operating in local/cached mode:', err);
       }
     }
     loadData();
-    const interval = setInterval(loadData, 3000); // 3-second live sync interval for real-time employee-admin feedback
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
